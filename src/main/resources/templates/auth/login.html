@@ -1,10 +1,120 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/header :: head}"></head>
 <body>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0"><i class="fas fa-sign-in-alt"></i> Login</h3>
+                </div>
+                <div class="card-body">
+                    <div id="alert-container"></div>
 
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" required
+                                   placeholder="Enter your email">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" required
+                                   placeholder="Enter your password">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100" id="loginBtn">
+                            <i class="fas fa-sign-in-alt"></i> Login
+                        </button>
+                    </form>
+
+                    <hr>
+                    <p class="text-center mb-0">
+                        Don't have an account? <a th:href="@{/register}">Register here</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const loginBtn = document.getElementById('loginBtn');
+        const alertContainer = document.getElementById('alert-container');
+
+        // Clear previous alerts
+        alertContainer.innerHTML = '';
+
+        // Disable button
+        loginBtn.disabled = true;
+        loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
+
+        try {
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ email, password })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                // Store token and user data
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('user', JSON.stringify(data));
+
+                console.log('Login successful. User role:', data.role);
+
+                // Show success message
+                alertContainer.innerHTML = `
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle"></i> Login successful! Redirecting to ${data.role} dashboard...
+                        </div>`;
+
+                // Redirect based on role
+                setTimeout(() => {
+                    if (data.role === 'INSTRUCTOR') {
+                        console.log('Redirecting to instructor dashboard');
+                        window.location.href = '/dashboard/instructor';
+                    } else if (data.role === 'STUDENT') {
+                        console.log('Redirecting to student dashboard');
+                        window.location.href = '/dashboard/student';
+                    } else if (data.role === 'ADMIN') {
+                        window.location.href = '/dashboard/admin';
+                    } else {
+                        window.location.href = '/dashboard';
+                    }
+                }, 1500);
+
+            } else {
+                alertContainer.innerHTML = `
+                        <div class="alert alert-danger alert-dismissible fade show">
+                            ${data.message || 'Invalid email or password'}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>`;
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            alertContainer.innerHTML = `
+                    <div class="alert alert-danger alert-dismissible fade show">
+                        Connection error. Please try again.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>`;
+            loginBtn.disabled = false;
+            loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
+        }
+    });
+</script>
 </body>
 </html>

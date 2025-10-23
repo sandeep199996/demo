@@ -1,10 +1,151 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/header :: head}"></head>
 <body>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0"><i class="fas fa-user-plus"></i> Register</h3>
+                </div>
+                <div class="card-body">
+                    <div id="alert-container"></div>
 
+                    <form id="registerForm">
+                        <div class="mb-3">
+                            <label for="fullName" class="form-label">Full Name</label>
+                            <input type="text" class="form-control" id="fullName" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" required minlength="6">
+                            <small class="text-muted">Minimum 6 characters</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="confirmPassword" class="form-label">Confirm Password</label>
+                            <input type="password" class="form-control" id="confirmPassword" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="role" class="form-label">I am a...</label>
+                            <select class="form-select" id="role" required>
+                                <option value="">Select Role</option>
+                                <option value="STUDENT">Student</option>
+                                <option value="INSTRUCTOR">Instructor</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100" id="registerBtn">
+                            <i class="fas fa-user-plus"></i> Register
+                        </button>
+                    </form>
+
+                    <hr>
+                    <p class="text-center mb-0">
+                        Already have an account? <a th:href="@{/login}">Login here</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<script>
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const fullName = document.getElementById('fullName').value;
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        const role = document.getElementById('role').value;
+        const registerBtn = document.getElementById('registerBtn');
+        const alertContainer = document.getElementById('alert-container');
+
+        // Clear previous alerts
+        alertContainer.innerHTML = '';
+
+        // Validate passwords match
+        if (password !== confirmPassword) {
+            alertContainer.innerHTML = `
+                    <div class="alert alert-danger alert-dismissible fade show">
+                        Passwords do not match!
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>`;
+            return;
+        }
+
+        // Disable button
+        registerBtn.disabled = true;
+        registerBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registering...';
+
+        try {
+            const response = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    fullName,
+                    email,
+                    password,
+                    role
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                // Store token and user data
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('user', JSON.stringify(data));
+
+                // Show success message
+                alertContainer.innerHTML = `
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle"></i> Registration successful! Redirecting...
+                        </div>`;
+// Redirect based on role
+                setTimeout(() => {
+                    if (role === 'STUDENT') {
+                        window.location.href = '/dashboard/student';
+                    } else if (role === 'INSTRUCTOR') {
+                        window.location.href = '/dashboard/instructor';
+                    } else if (role === 'ADMIN') {
+                        window.location.href = '/dashboard/admin';
+                    } else {
+                        window.location.href = '/dashboard';
+                    }
+                }, 1500);
+
+
+            } else {
+                alertContainer.innerHTML = `
+                        <div class="alert alert-danger alert-dismissible fade show">
+                            ${data.message || 'Registration failed. Please try again.'}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>`;
+                registerBtn.disabled = false;
+                registerBtn.innerHTML = '<i class="fas fa-user-plus"></i> Register';
+            }
+        } catch (error) {
+            alertContainer.innerHTML = `
+                    <div class="alert alert-danger alert-dismissible fade show">
+                        Error: ${error.message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>`;
+            registerBtn.disabled = false;
+            registerBtn.innerHTML = '<i class="fas fa-user-plus"></i> Register';
+        }
+    });
+</script>
 </body>
 </html>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/header :: head}"></head>
+<body>
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="container mt-4">
+    <h2><i class="fas fa-tachometer-alt"></i> Student Dashboard</h2>
+    <p class="text-muted">Welcome back, <span id="studentName">Student</span>!</p>
+
+    <div class="row mt-4">
+        <div class="col-md-3 mb-4">
+            <div class="card text-white bg-primary">
+                <div class="card-body text-center">
+                    <h5><i class="fas fa-book"></i> Enrolled Courses</h5>
+                    <h2 id="totalCourses">0</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-4">
+            <div class="card text-white bg-success">
+                <div class="card-body text-center">
+                    <h5><i class="fas fa-check-circle"></i> Completed</h5>
+                    <h2 id="completedCourses">0</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-4">
+            <div class="card text-white bg-warning">
+                <div class="card-body text-center">
+                    <h5><i class="fas fa-clock"></i> In Progress</h5>
+                    <h2 id="inProgressCourses">0</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-4">
+            <div class="card text-white bg-info">
+                <div class="card-body text-center">
+                    <h5><i class="fas fa-chart-line"></i> Avg Progress</h5>
+                    <h2 id="avgProgress">0%</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header">
+            <h4><i class="fas fa-list"></i> My Enrolled Courses</h4>
+        </div>
+        <div class="card-body">
+            <div id="enrollmentsContainer">
+                <p class="text-center text-muted">Loading...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<script>
+    async function loadDashboard() {
+        const token = localStorage.getItem('token');
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+        if (!token) {
+            window.location.href = '/login';
+            return;
+        }
+
+        document.getElementById('studentName').textContent = user.email || 'Student';
+
+        try {
+            const analyticsResponse = await fetch('/api/analytics/student/my-analytics', {
+                headers: {'Authorization': `Bearer ${token}`}
+            });
+
+            if (analyticsResponse.ok) {
+                const analytics = await analyticsResponse.json();
+                document.getElementById('totalCourses').textContent = analytics.totalEnrollments || 0;
+                document.getElementById('completedCourses').textContent = analytics.completedCourses || 0;
+                document.getElementById('inProgressCourses').textContent = analytics.inProgressCourses || 0;
+                document.getElementById('avgProgress').textContent = Math.round(analytics.averageProgress || 0) + '%';
+            }
+
+            const enrollmentsResponse = await fetch('/api/enrollments/my-courses', {
+                headers: {'Authorization': `Bearer ${token}`}
+            });
+
+            if (enrollmentsResponse.ok) {
+                const enrollments = await enrollmentsResponse.json();
+                displayEnrollments(enrollments);
+            } else {
+                document.getElementById('enrollmentsContainer').innerHTML =
+                    '<p class="text-muted">No courses enrolled yet. <a href="/courses">Browse courses</a></p>';
+            }
+
+        } catch (error) {
+            console.error('Error:', error);
+            document.getElementById('enrollmentsContainer').innerHTML =
+                '<p class="text-danger">Error loading dashboard data</p>';
+        }
+    }
+
+    function displayEnrollments(enrollments) {
+        const container = document.getElementById('enrollmentsContainer');
+
+        if (!enrollments || enrollments.length === 0) {
+            container.innerHTML = '<p class="text-muted">No courses enrolled yet. <a href="/courses">Browse courses</a></p>';
+            return;
+        }
+
+        let html = '<table class="table table-hover"><thead><tr><th>Course</th><th>Progress</th><th>Status</th></tr></thead><tbody>';
+
+        enrollments.forEach(enrollment => {
+            const progress = enrollment.progressPercentage || 0;
+            const status = enrollment.completed ?
+                '<span class="badge bg-success">Completed</span>' :
+                '<span class="badge bg-warning">In Progress</span>';
+
+            html += `<tr>
+                    <td><strong>${enrollment.course?.title || 'Unknown Course'}</strong></td>
+                    <td><div class="progress"><div class="progress-bar" style="width: ${progress}%">${progress}%</div></div></td>
+                    <td>${status}</td>
+                </tr>`;
+        });
+
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+
+    document.addEventListener('DOMContentLoaded', loadDashboard);
+</script>
+</body>
+</html>
+

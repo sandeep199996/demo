@@ -1,10 +1,101 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/header :: head}"></head>
 <body>
+<div th:replace="~{fragments/navbar :: navbar}"></div>
 
+<div class="container mt-4">
+    <h2><i class="fas fa-book"></i> Browse Courses</h2>
+
+    <!-- Search and Filter -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <input type="text" class="form-control" id="searchInput"
+                   placeholder="Search courses...">
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" id="categoryFilter">
+                <option value="">All Categories</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" id="difficultyFilter">
+                <option value="">All Levels</option>
+                <option value="Beginner">Beginner</option>
+                <option value="Intermediate">Intermediate</option>
+                <option value="Advanced">Advanced</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Course Grid -->
+    <div class="row" id="courseGrid">
+        <!-- Courses will be loaded here dynamically -->
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<script>
+    async function loadCourses() {
+        const keyword = document.getElementById('searchInput').value;
+        const category = document.getElementById('categoryFilter').value;
+        const difficulty = document.getElementById('difficultyFilter').value;
+
+        let url = '/api/search/courses?';
+        if (keyword) url += `keyword=${keyword}&`;
+        if (category) url += `categoryId=${category}&`;
+        if (difficulty) url += `difficulty=${difficulty}&`;
+
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            displayCourses(data.content);
+        } catch (error) {
+            console.error('Error loading courses:', error);
+        }
+    }
+
+    function displayCourses(courses) {
+        const grid = document.getElementById('courseGrid');
+        grid.innerHTML = '';
+
+        courses.forEach(course => {
+            const card = `
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100 shadow-sm">
+                            <img src="${course.thumbnailUrl || '/images/default-course.jpg'}"
+                                 class="card-img-top" alt="${course.title}">
+                            <div class="card-body">
+                                <h5 class="card-title">${course.title}</h5>
+                                <p class="card-text">${course.description.substring(0, 100)}...</p>
+                                <p class="text-muted">
+                                    <small><i class="fas fa-user"></i> ${course.instructorName}</small>
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="badge bg-primary">${course.difficulty}</span>
+                                    <strong class="text-success">$${course.price}</strong>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <a href="/courses/${course.id}" class="btn btn-primary btn-sm w-100">
+                                    View Details
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            grid.innerHTML += card;
+        });
+    }
+
+    // Load courses on page load
+    document.addEventListener('DOMContentLoaded', loadCourses);
+
+    // Add event listeners for search/filter
+    document.getElementById('searchInput').addEventListener('input', loadCourses);
+    document.getElementById('categoryFilter').addEventListener('change', loadCourses);
+    document.getElementById('difficultyFilter').addEventListener('change', loadCourses);
+</script>
 </body>
 </html>

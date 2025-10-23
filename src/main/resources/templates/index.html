@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/header :: head}"></head>
+<body>
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="container mt-5">
+    <!-- Hero Section -->
+    <div class="jumbotron text-center bg-light p-5 rounded">
+        <h1 class="display-4">Welcome</h1>
+        <p class="lead">Your Smart E-Learning Platform</p>
+        <hr class="my-4">
+        <p>Explore courses, track your progress, and achieve your learning goals</p>
+        <a class="btn btn-primary btn-lg" th:href="@{/courses}" role="button">
+            <i class="fas fa-book"></i> Browse Courses
+        </a>
+        <a class="btn btn-outline-secondary btn-lg" th:href="@{/register}" role="button">
+            <i class="fas fa-user-plus"></i> Sign Up
+        </a>
+    </div>
+
+    <!-- Features Section -->
+    <div class="row mt-5">
+        <div class="col-md-4 text-center">
+            <i class="fas fa-video fa-3x text-primary mb-3"></i>
+            <h3>Interactive Lessons</h3>
+            <p>Engaging video content and hands-on exercises</p>
+        </div>
+        <div class="col-md-4 text-center">
+            <i class="fas fa-chart-line fa-3x text-success mb-3"></i>
+            <h3>Progress Tracking</h3>
+            <p>Monitor your learning journey with detailed analytics</p>
+        </div>
+        <div class="col-md-4 text-center">
+            <i class="fas fa-certificate fa-3x text-warning mb-3"></i>
+            <h3>Certifications</h3>
+            <p>Earn certificates upon course completion</p>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>
